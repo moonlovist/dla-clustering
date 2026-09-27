@@ -24,11 +24,40 @@ calibrates purity + completeness, and fits the linear DLA bias.
 - **`measure_1d_dla_clustering.py`** — runs the measurement → `outputs/clustering_2lpt.png`.
 - **`fit_dla_bias.py`** — fits the linear bias (EH98 ξ_matter, self-contained) → `outputs/bias_fit.png`.
 - **`subdla_and_stability.py`** — the sub-DLA (NHI>20) variant and a GP bias-fit stability sweep.
+- **`clustering_3d_lib.py`** — shared FITS I/O, distance conversion, MPI, and output utilities for 3D measurements.
+- **`generate_dla_random_3d.py`** — control randoms uniform in the occupied HEALPix footprint with empirical `n(z)`.
+- **`generate_dla_random_qso_los.py`** — fiducial randoms on exact QSO sightlines with optional per-QSO forest windows.
+- **`measure_dla_auto_3d.py`** — 3D DLA auto-correlation multipoles with pycorr/Corrfunc Landy–Szalay.
+- **`measure_dla_qso_cross_3d.py`** — 3D DLA x QSO cross-correlation multipoles with cross Landy–Szalay.
 
 **Data:** the measurement scripts read the 2LPT mock catalogs from absolute paths on this cluster (`TRUTH_PATH`/`FINDER_PATH`/… in `scripts/clustering_lib.py`); edit those to run elsewhere. The tutorials and `pytest tests/` need no data.
 
 ### Tests
 - **`tests/test_physics.py`**, **`tests/test_matching.py`**, **`tests/test_camb_consistency.py`** — 33 self-contained unit tests (cosmology + estimator; truth↔finder matching & completeness/purity calibration; EH98 template vs CAMB at the linear-P(k) level). Run `pytest tests/`.
+- **`tests/test_3d_randoms.py`** — dependency-light tests of the forest window and QSO-sightline assignment logic.
+
+### Optional 3D workflow
+
+The 3D scripts require `healpy`; pair counting additionally requires `pycorr`
+and `Corrfunc` (`mpi4py` is optional).  The QSO-sightline random is the
+physically motivated default for absorber catalogs; the HEALPix construction is
+kept as a control for random-catalog systematics.
+
+```bash
+python scripts/generate_dla_random_qso_los.py \
+  --reference-file dla.fits --qso-file qso.fits \
+  --qso-z-column Z_QSO_NO_RSD --window forest \
+  --output random_dla_los.fits
+
+python scripts/measure_dla_auto_3d.py \
+  --dla-file dla.fits --random-file random_dla_los.fits \
+  --output outputs/dla_auto.npz
+
+python scripts/measure_dla_qso_cross_3d.py \
+  --dla-file dla.fits --dla-random-file random_dla_los.fits \
+  --qso-file qso.fits --qso-random-file random_qso.fits \
+  --output outputs/dla_qso_cross.npz
+```
 
 ### Notebooks & outputs
 - **`dla_clustering_tutorial.ipynb`** — the method top-to-bottom with the physics (start here for learning).
